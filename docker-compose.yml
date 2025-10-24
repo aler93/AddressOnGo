@@ -8,13 +8,12 @@ volumes:
 services:
   cep_redis:
     image: redis:alpine
-    container_name: fsx_redis
+    container_name: cep_redis
     restart: unless-stopped
     networks:
       - cep_rede
     ports:
-      - 6389:6379
+      - ${REDIS_PORT}:6379
     volumes:
       - cep_cache:/data
-    entrypoint: redis-server --requirepass secretPass
-
+    entrypoint: redis-server --requirepass ${REDIS_PASSWORD}

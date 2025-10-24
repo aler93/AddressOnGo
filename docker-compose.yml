@@ -1,0 +1,20 @@
+networks:
+  cep_rede:
+    driver: bridge
+
+volumes:
+  cep_cache:
+
+services:
+  cep_redis:
+    image: redis:alpine
+    container_name: fsx_redis
+    restart: unless-stopped
+    networks:
+      - cep_rede
+    ports:
+      - 6389:6379
+    volumes:
+      - cep_cache:/data
+    entrypoint: redis-server --requirepass secretPass
+

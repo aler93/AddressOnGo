@@ -1,6 +1,6 @@
 module aler93.com/adressongo
 
-go 1.24.9
+go 1.24.8
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

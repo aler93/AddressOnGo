@@ -1,15 +1,16 @@
 package main
 
 import (
-	"aler93.com/adressongo/model"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"os"
 	_ "reflect"
 	"regexp"
 	"sync"
+
+	"aler93.com/adressongo/model"
+	"github.com/redis/go-redis/v9"
 )
 
 var client *redis.Client
@@ -28,8 +29,8 @@ func main() {
 	wg.Add(2)
 	go (func() {
 		client = redis.NewClient(&redis.Options{
-			Addr:     "127.0.0.1:6389",
-			Password: "secretPass",
+			Addr:     "127.0.0.1:" + App.RedisPort,
+			Password: App.RedisPassword,
 			DB:       0,
 			Protocol: 2,
 		})

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"aler93.com/adressongo/model"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,10 +8,11 @@ import (
 	"os"
 	_ "strconv"
 	"time"
+
+	"aler93.com/adressongo/model"
 )
 
 func viaCep(cep string) {
-	// call https://viacep.com.br/ws/97020100/json
 	var url string = "https://viacep.com.br/ws/" + cep + "/json"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -49,7 +49,6 @@ func viaCep(cep string) {
 }
 
 func openCep(cep string) {
-	// call https://opencep.com/v1/97020100
 	var url string = "https://opencep.com/v1/" + cep
 	resp, err := http.Get(url)
 	if err != nil {
@@ -81,7 +80,6 @@ func openCep(cep string) {
 }
 
 func brasilApi(cep string) {
-	// call https://brasilapi.com.br/api/cep/v2/97020100
 	var url string = "https://brasilapi.com.br/api/cep/v2/" + cep
 	resp, err := http.Get(url)
 	if err != nil {
@@ -120,10 +118,8 @@ func logErrorToDisk(message string) {
 	min := fmt.Sprintf("%d", now.Minute())
 	sec := fmt.Sprintf("%d", now.Second())
 
-	//fName := "request_error_" + year + month + day + ".log"
 	fName := "request_error_" + year + month + day + hour + min + sec + ".log"
 	text := year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec + "\n - " + message
-	//text := now.Format("2000-12-30_23-59-58") + "\n - " + message
 
 	d1 := []byte(text)
 	err := os.WriteFile(App.Log+fName, d1, 0644)

@@ -6,8 +6,10 @@ import (
 )
 
 type conf struct {
-	Length int    `json:length`
-	Log    string `json:log`
+	Length        int    `json:"length"`
+	Log           string `json:"log"`
+	RedisPassword string `json:"redis_password"`
+	RedisPort     string `json:"redis_port"`
 }
 
 var App conf

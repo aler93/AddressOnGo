@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"net/http"
 	_ "reflect"
-	"regexp"
 	"sync"
 
 	"aler93.com/adressongo/model"
@@ -16,131 +15,92 @@ import (
 var client *redis.Client
 var result model.Cep
 
-// var service int // 0=viacep, 1=opencep, 2=brasilapi
-var printed bool = false
-
 func main() {
-	//fmt.Println("starting...")
-	var wg sync.WaitGroup
-
 	loadConf()
 
-	var search string
-	wg.Add(2)
-	go (func() {
-		client = redis.NewClient(&redis.Options{
-			Addr:     "127.0.0.1:" + App.RedisPort,
-			Password: App.RedisPassword,
-			DB:       0,
-			Protocol: 2,
-		})
+	//var search string
+	client = redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:" + App.RedisPort,
+		Password: App.RedisPassword,
+		DB:       0,
+		Protocol: 2,
+	})
 
-		if client == nil {
-			panic("Conexão com Redis falhou")
-		}
-
-		/*ctx := context.Background()
-		curPoint, err := client.Get(ctx, "service").Result()
-		if err != nil {
-			//fmt.Println("CEP: ", key, "não encontrado localmente")
-			service = 0
-			client.Set(ctx, "service", 1, 0)
-		} else {
-			service, _ = strconv.Atoi(curPoint)
-		}*/
-
-		wg.Done()
-	})()
-
-	go (func() {
-		reg := regexp.MustCompile(`^[0-9]+$`)
-		search = os.Args[1]
-
-		if App.Length != len(search) {
-			panic("Informe o cep")
-		}
-
-		if !reg.MatchString(search) {
-			panic("CEP inválido")
-		}
-
-		wg.Done()
-	})()
-
-	wg.Wait()
-
-	get(search)
-	if len(result.Cep) > 0 {
-		printed = true
-		print, _ := json.Marshal(result)
-		fmt.Println(string(print))
-
-		os.Exit(0)
+	if client == nil {
+		panic("Conexão com Redis falhou")
 	}
 
-	doReq(search)
+	fmt.Println("Iniciando servidor na porta " + App.ServerPort)
 
-	// Exibe resultado do request
-	if printed == false {
-		print, _ := json.Marshal(result)
-		fmt.Println(string(print))
+	http.HandleFunc("/", handler)
 
-		ctx := context.Background()
-		client.Set(ctx, search, print, 0)
+	err := http.ListenAndServe(":"+App.ServerPort, nil)
+	if err != nil {
+		panic(err)
 	}
-
-	os.Exit(0)
 }
 
-func doReq(cep string) {
-	//service = 0
-	//fmt.Println(service)
-
+func doReq(cep string, w http.ResponseWriter, r *http.Request) {
 	var group sync.WaitGroup
 	ctx := context.Background()
 
+	//fmt.Println("Iniciando requisições para:", cep)
+	printed := false
+	result = model.Cep{}
 	group.Add(3)
 	go (func() {
 		viaCep(cep)
 		if printed == false {
-			print, _ := json.Marshal(result)
-			fmt.Println(string(print))
 			printed = true
+			print, _ := json.Marshal(result)
 
 			client.Set(ctx, cep, print, 0)
+
+			renderJson(JsonResp{w, r, result, 200})
+			//fmt.Println("ViaCep - Retornando resposta")
 		}
 
-		os.Exit(0)
+		//fmt.Println("ViaCep concluído")
 		group.Done()
 	})()
 	go (func() {
 		openCep(cep)
 		if printed == false {
-			print, _ := json.Marshal(result)
-			fmt.Println(string(print))
 			printed = true
+			print, _ := json.Marshal(result)
 
 			client.Set(ctx, cep, print, 0)
+
+			renderJson(JsonResp{w, r, result, 200})
+			//fmt.Println("OpenCep - Retornando resposta")
 		}
 
-		os.Exit(0)
+		//fmt.Println("OpenCep concluído")
 		group.Done()
 	})()
 	go (func() {
 		brasilApi(cep)
 		if printed == false {
-			print, _ := json.Marshal(result)
-			fmt.Println(string(print))
 			printed = true
+			print, _ := json.Marshal(result)
 
 			client.Set(ctx, cep, print, 0)
+
+			renderJson(JsonResp{w, r, result, 200})
+			//fmt.Println("BrasilApi - Retornando resposta")
 		}
 
-		os.Exit(0)
+		//fmt.Println("BrasilApi concluído")
 		group.Done()
 	})()
 
+	//fmt.Println("Aguardando conclusões das threads")
 	group.Wait()
+
+	if printed == false {
+		renderJson(JsonResp{w, r, "CEP não encontrado", 404})
+	}
+	//fmt.Println("Encerrando doReq()")
 }
 
 func get(key string) bool {
@@ -153,7 +113,7 @@ func get(key string) bool {
 	}
 
 	json.Unmarshal([]byte(val), &result)
-
+	//fmt.Println("CEP: ", key, "Local")
 	result.Local = true
 
 	return true

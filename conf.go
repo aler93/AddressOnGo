@@ -10,6 +10,7 @@ type conf struct {
 	Log           string `json:"log"`
 	RedisPassword string `json:"redis_password"`
 	RedisPort     string `json:"redis_port"`
+	ServerPort    string `json:"server_port"`
 }
 
 var App conf

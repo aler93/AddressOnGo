@@ -15,6 +15,11 @@ import (
 var client *redis.Client
 var result model.Cep
 
+type errMsg struct {
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
+}
+
 func main() {
 	loadConf()
 
@@ -54,9 +59,11 @@ func doReq(cep string, w http.ResponseWriter, r *http.Request) {
 			printed = true
 			print, _ := json.Marshal(result)
 
-			client.Set(ctx, cep, print, 0)
+			if len(result.Cep) > 0 {
+				client.Set(ctx, cep, print, 0)
+				renderJson(JsonResp{w, r, result, 200})
+			}
 
-			renderJson(JsonResp{w, r, result, 200})
 			//fmt.Println("ViaCep - Retornando resposta")
 		}
 
@@ -69,9 +76,10 @@ func doReq(cep string, w http.ResponseWriter, r *http.Request) {
 			printed = true
 			print, _ := json.Marshal(result)
 
-			client.Set(ctx, cep, print, 0)
-
-			renderJson(JsonResp{w, r, result, 200})
+			if len(result.Cep) > 0 {
+				client.Set(ctx, cep, print, 0)
+				renderJson(JsonResp{w, r, result, 200})
+			}
 			//fmt.Println("OpenCep - Retornando resposta")
 		}
 
@@ -84,22 +92,23 @@ func doReq(cep string, w http.ResponseWriter, r *http.Request) {
 			printed = true
 			print, _ := json.Marshal(result)
 
-			client.Set(ctx, cep, print, 0)
-
-			renderJson(JsonResp{w, r, result, 200})
+			if len(result.Cep) > 0 {
+				client.Set(ctx, cep, print, 0)
+				renderJson(JsonResp{w, r, result, 200})
+			}
 			//fmt.Println("BrasilApi - Retornando resposta")
 		}
 
 		//fmt.Println("BrasilApi concluído")
 		group.Done()
+
+		if len(result.Cep) <= 0 {
+			renderJson(JsonResp{w, r, errMsg{true, "CEP não encontrado"}, 404})
+		}
 	})()
 
 	//fmt.Println("Aguardando conclusões das threads")
 	group.Wait()
-
-	if printed == false {
-		renderJson(JsonResp{w, r, "CEP não encontrado", 404})
-	}
 	//fmt.Println("Encerrando doReq()")
 }
 

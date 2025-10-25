@@ -1,4 +1,7 @@
 {
   "length": 8,
-  "log": "/tmp/AddressOnGo/"
+  "log": "/tmp/AddressOnGo/",
+  "redis_password": "yousecretpswdhere",
+  "redis_port": "6379",
+  "server_port": "5000"
 }
